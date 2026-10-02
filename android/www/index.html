@@ -2,66 +2,54 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Gestion des outils</title>
-  <style>
-    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #12171d; color: #e8edf2;
-           font-family: system-ui, Roboto, sans-serif; }
-    .card { background: #1b232c; border: 1px solid #33414f; border-top: 4px solid #f5a623; border-radius: 10px;
-            padding: 22px; width: min(92vw, 420px); }
-    h1 { font-size: 1.3rem; margin: 0 0 6px; }
-    p { color: #9aa8b6; margin: 0 0 16px; }
-    label { font-weight: 600; font-size: .9rem; color: #9aa8b6; }
-    input { width: 100%; box-sizing: border-box; margin: 6px 0 14px; padding: 12px; font-size: 1rem; border-radius: 6px;
-            border: 1px solid #33414f; background: #232d38; color: #e8edf2; }
-    button { width: 100%; padding: 12px; font-size: 1rem; font-weight: 700; border: 0; border-radius: 6px;
-             background: #f5a623; color: #1a1300; }
-    button.sec { background: transparent; color: #e8edf2; border: 1px solid #33414f; margin-top: 8px; }
-    #err { color: #ff5d5d; min-height: 1.2em; }
-  </style>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#12171d">
+  <link rel="stylesheet" href="style.css">
+  <script>
+    try { document.documentElement.dataset.theme = localStorage.getItem('tm-theme') || 'industriel'; } catch (e) {}
+  </script>
 </head>
 <body>
-  <div class="card">
-    <h1>Gestion des outils</h1>
-    <p>Adresse du serveur (Raspberry Pi) sur le réseau de l'usine.</p>
-    <label for="url">Adresse du serveur</label>
-    <input id="url" inputmode="url" placeholder="http://192.168.1.50:8080">
-    <div id="err"></div>
-    <button id="go">Se connecter</button>
-    <button id="stop" class="sec" hidden>Changer d'adresse</button>
-  </div>
-  <script>
-    var input = document.getElementById('url'), err = document.getElementById('err');
-    var stop = document.getElementById('stop'), timer = null;
-    var saved = null;
-    try { saved = localStorage.getItem('tm-server'); } catch (e) {}
-    input.value = saved || 'http://raspberrypi.local:8080';
+  <header class="top">
+    <div class="brand"><div class="logo">GO</div> Gestion des outils <span class="admin-flag admin-only">ADMIN</span></div>
+    <nav class="tabs" id="tabs">
+      <button data-view="dashboard" class="active">Tableau de bord</button>
+      <button data-view="liste">Liste</button>
+      <button data-view="arbre">Arborescence</button>
+      <button data-view="historique">Historique</button>
+      <button data-view="admin">Administration</button>
+    </nav>
+    <div class="tools">
+      <select id="theme" title="Thème">
+        <option value="industriel">Thème industriel</option>
+        <option value="clair">Thème clair</option>
+        <option value="acier">Thème bleu acier</option>
+        <option value="contraste">Contraste élevé</option>
+      </select>
+      <button class="btn" id="btn-login">Mode admin</button>
+    </div>
+  </header>
 
-    function normaliser(u) {
-      u = u.trim().replace(/\/+$/, '');
-      if (!/^https?:\/\//i.test(u)) u = 'http://' + u;
-      return u;
-    }
-    function connecter() {
-      var u = normaliser(input.value);
-      err.textContent = 'Connexion à ' + u + '…';
-      var ctrl = new AbortController();
-      setTimeout(function () { ctrl.abort(); }, 6000);
-      fetch(u + '/api/version', { signal: ctrl.signal }).then(function (r) {
-        if (!r.ok) throw new Error();
-        try { localStorage.setItem('tm-server', u); } catch (e) {}
-        location.href = u + '/';
-      }).catch(function () {
-        err.textContent = 'Serveur injoignable. Vérifiez l\'adresse et le Wi-Fi.';
-      });
-    }
-    document.getElementById('go').onclick = connecter;
-    stop.onclick = function () { clearTimeout(timer); stop.hidden = true; err.textContent = ''; };
-    if (saved) {
-      stop.hidden = false;
-      err.textContent = 'Connexion automatique…';
-      timer = setTimeout(connecter, 1500);
-    }
-  </script>
+  <main>
+    <section id="view-dashboard"></section>
+    <section id="view-liste" hidden></section>
+    <section id="view-arbre" hidden></section>
+    <section id="view-historique" hidden></section>
+    <section id="view-admin" hidden></section>
+  </main>
+
+  <div class="modal-bg" id="modal-bg">
+    <div class="modal">
+      <header><h2 id="modal-title"></h2><button class="btn small" id="modal-close">✕</button></header>
+      <div class="body" id="modal-body"></div>
+      <footer id="modal-foot"></footer>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+
+  <script src="store.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

@@ -25,12 +25,10 @@ jobs:
           java-version: 21
       - name: Installer Capacitor
         run: npm install
+      - name: Tests
+        run: npm test
       - name: Générer le projet Android
-        run: |
-          npx cap add android
-          # Autorise http:// vers le Raspberry Pi du réseau local
-          sed -i 's#<application#<application android:usesCleartextTraffic="true"#' android/app/src/main/AndroidManifest.xml
-          npx cap sync android
+        run: npx cap add android && npx cap sync android
       - name: Compiler l'APK
         working-directory: android/android
         run: ./gradlew assembleDebug --no-daemon

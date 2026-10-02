@@ -3,11 +3,6 @@
   "appName": "Gestion des outils",
   "webDir": "www",
   "server": {
-    "androidScheme": "https",
-    "cleartext": true,
-    "allowNavigation": ["*"]
-  },
-  "android": {
-    "allowMixedContent": true
+    "androidScheme": "https"
   }
 }

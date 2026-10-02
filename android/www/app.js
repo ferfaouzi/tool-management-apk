@@ -14,13 +14,30 @@ const TYPES = () => Object.keys(S.meta.types);
 const label = t => (S.meta.types[t] || {}).label || t;
 const isAdmin = () => S.meta && S.meta.admin;
 
-async function api(url, opts = {}) {
-  const o = { credentials: 'same-origin', headers: {}, ...opts };
-  if (o.body && typeof o.body !== 'string') { o.body = JSON.stringify(o.body); o.headers['Content-Type'] = 'application/json'; }
-  const r = await fetch(url, o);
-  const data = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(data.erreur || ('Erreur ' + r.status));
-  return data;
+const api = Stockage.api; // données stockées dans le téléphone (store.js)
+
+/* Enregistre un fichier : partage Android dans l'APK, téléchargement dans un navigateur */
+async function telecharger(nom, contenu, type) {
+  const P = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform() && window.Capacitor.Plugins;
+  if (P && P.Filesystem && P.Share) {
+    const b64 = btoa(unescape(encodeURIComponent(contenu)));
+    const { uri } = await P.Filesystem.writeFile({ path: nom, data: b64, directory: 'CACHE' });
+    await P.Share.share({ title: nom, files: [uri] });
+    return;
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([contenu], { type }));
+  a.download = nom;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+const jour = () => new Date().toISOString().slice(0, 10);
+async function exporterCsv() {
+  try { await telecharger(`outils-${jour()}.csv`, await api('/api/export.csv'), 'text/csv'); } catch (e) { toast(e.message, true); }
+}
+async function exporterSauvegarde() {
+  try { await telecharger(`sauvegarde-outils-${jour()}.json`, JSON.stringify(await api('/api/sauvegarde'), null, 1), 'application/json'); }
+  catch (e) { toast(e.message, true); }
 }
 
 function toast(msg, err) {
@@ -146,7 +163,7 @@ function vueListe() {
 
   el.innerHTML = `
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><h2 style="margin-right:auto">Liste des éléments</h2>
-      <a class="btn" href="/api/export.csv">Exporter CSV</a>
+      <button class="btn" id="csv">Exporter CSV</button>
       <button class="btn primary admin-only" id="add">+ Ajouter</button></div>
     <div class="card">
       <div class="filters">
@@ -190,6 +207,7 @@ function vueListe() {
     });
   });
   $('#reset', el).onclick = () => { S.filtres = {}; vueListe(); };
+  $('#csv', el).onclick = exporterCsv;
   $('#add', el).onclick = () => {
     const dernier = [...HIER].reverse().find(t => f[t]);
     formulaire(null, { type: f.type || '', parent_id: dernier ? +f[dernier] : null });
@@ -271,22 +289,20 @@ function vueAdmin() {
         ${(L[c] || []).map(v => `<div class="status-row"><span>${esc(v)}</span><button class="btn small danger" data-dl="${esc(c)}" data-v="${esc(v)}">Supprimer</button></div>`).join('')}
         <div class="filters" style="margin-top:10px"><input id="new-${c}" placeholder="Nouvelle valeur"><button class="btn primary" data-al="${c}">Ajouter</button></div></div>`).join('')}
       <div class="card"><h3>Sauvegarde</h3>
-        <p><a class="btn" href="/api/sauvegarde">Télécharger une sauvegarde (JSON)</a> <a class="btn" href="/api/export.csv">Exporter CSV</a></p>
+        <p><button class="btn" id="save">Enregistrer une sauvegarde (JSON)</button> <button class="btn" id="csv2">Exporter CSV</button></p>
         <p><label class="btn">Restaurer une sauvegarde… <input type="file" id="restore" accept=".json" hidden></label></p>
         <p class="path">La restauration remplace toutes les données actuelles.</p>
       </div>
       <div class="card"><h3>Mot de passe administrateur</h3>
         <div class="filters"><input type="password" id="pwd1" placeholder="Nouveau mot de passe"><input type="password" id="pwd2" placeholder="Confirmer">
         <button class="btn primary" id="pwd">Changer</button></div></div>
-      <div class="card"><h3>Synchronisation des machines</h3>
-        <p>Tous les postes connectés au serveur voient les mêmes données ; l'affichage se met à jour automatiquement toutes les 5 secondes.</p>
-        <p>Une machine ou un automate peut envoyer ses coups au serveur :</p>
-        <pre style="white-space:pre-wrap;background:var(--surface-2);padding:10px;border-radius:6px">curl -X POST http://${esc(location.host)}/api/entites/&lt;id&gt;/coups \\
-  -H "X-API-Key: &lt;clé&gt;" -H "Content-Type: application/json" \\
-  -d '{"increment": 1}'</pre>
-        <p class="path">La clé est définie par la variable TM_API_KEY sur le serveur. L'identifiant (id) de chaque élément est affiché dans sa fiche.</p>
+      <div class="card"><h3>Données</h3>
+        <p>Les données sont enregistrées dans ce téléphone, sans connexion internet.</p>
+        <p class="path">Pensez à enregistrer régulièrement une sauvegarde : elle permet aussi de transférer les données vers un autre téléphone (Restaurer une sauvegarde).</p>
       </div>
     </div>`;
+  $('#save', el).onclick = exporterSauvegarde;
+  $('#csv2', el).onclick = exporterCsv;
   el.querySelectorAll('[data-al]').forEach(b => b.onclick = async () => {
     const c = b.dataset.al, v = $('#new-' + c, el).value.trim();
     if (!v) return;
@@ -452,19 +468,6 @@ async function login() {
   setTimeout(() => $('#pw').focus(), 50);
 }
 
-/* ---------- Synchronisation ---------- */
-async function sync() {
-  const s = $('#sync');
-  try {
-    const { version } = await api('/api/version');
-    s.classList.remove('off'); $('#sync-txt').textContent = 'Synchronisé';
-    // Ne pas redessiner pendant une saisie dans une fenêtre
-    if (version !== S.version && !$('#modal-bg').classList.contains('open')) await charger();
-  } catch (e) {
-    s.classList.add('off'); $('#sync-txt').textContent = 'Hors ligne';
-  }
-}
-
 /* ---------- Démarrage ---------- */
 document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => { S.view = b.dataset.view; render(); });
 $('#btn-login').onclick = login;
@@ -474,4 +477,3 @@ const th = $('#theme');
 th.value = document.documentElement.dataset.theme || 'industriel';
 th.onchange = () => { document.documentElement.dataset.theme = th.value; try { localStorage.setItem('tm-theme', th.value); } catch (e) {} };
 charger().catch(e => toast(e.message, true));
-setInterval(sync, 5000);
