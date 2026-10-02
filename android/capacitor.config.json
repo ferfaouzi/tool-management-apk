@@ -1,0 +1,13 @@
+{
+  "appId": "com.gestion.outils",
+  "appName": "Gestion des outils",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true,
+    "allowNavigation": ["*"]
+  },
+  "android": {
+    "allowMixedContent": true
+  }
+}

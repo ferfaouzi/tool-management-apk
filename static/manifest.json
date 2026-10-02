@@ -1,0 +1,10 @@
+{
+  "name": "Gestion des outils",
+  "short_name": "Outils",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#12171d",
+  "theme_color": "#12171d",
+  "lang": "fr",
+  "icons": [{ "src": "/static/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

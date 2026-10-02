@@ -1,0 +1,7 @@
+data/
+__pycache__/
+*.pyc
+.venv/
+android/node_modules/
+android/android/
+*.apk
