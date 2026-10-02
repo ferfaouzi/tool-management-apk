@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Gestion des outils</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#12171d">
+  <link rel="stylesheet" href="style.css">
+  <script>
+    try { document.documentElement.dataset.theme = localStorage.getItem('tm-theme') || 'industriel'; } catch (e) {}
+  </script>
+</head>
+<body>
+  <header class="top">
+    <div class="brand"><div class="logo">GO</div> Gestion des outils <span class="admin-flag admin-only">ADMIN</span></div>
+    <nav class="tabs" id="tabs">
+      <button data-view="dashboard" class="active">Tableau de bord</button>
+      <button data-view="liste">Liste</button>
+      <button data-view="arbre">Arborescence</button>
+      <button data-view="historique">Historique</button>
+      <button data-view="admin">Administration</button>
+    </nav>
+    <div class="tools">
+      <select id="theme" title="Thème">
+        <option value="industriel">Thème industriel</option>
+        <option value="clair">Thème clair</option>
+        <option value="acier">Thème bleu acier</option>
+        <option value="contraste">Contraste élevé</option>
+      </select>
+      <button class="btn" id="btn-login">Mode admin</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="view-dashboard"></section>
+    <section id="view-liste" hidden></section>
+    <section id="view-arbre" hidden></section>
+    <section id="view-historique" hidden></section>
+    <section id="view-admin" hidden></section>
+  </main>
+
+  <div class="modal-bg" id="modal-bg">
+    <div class="modal">
+      <header><h2 id="modal-title"></h2><button class="btn small" id="modal-close">✕</button></header>
+      <div class="body" id="modal-body"></div>
+      <footer id="modal-foot"></footer>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+
+  <script src="store.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
