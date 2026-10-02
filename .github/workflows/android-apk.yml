@@ -5,6 +5,7 @@ on:
     paths:
       - "android/**"
       - ".github/workflows/android-apk.yml"
+  pull_request:
   workflow_dispatch:
 
 jobs:
@@ -22,7 +23,6 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-      - uses: android-actions/setup-android@v3
       - name: Installer Capacitor
         run: npm install
       - name: Générer le projet Android
